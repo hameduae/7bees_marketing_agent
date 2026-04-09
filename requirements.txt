@@ -1,0 +1,6 @@
+flask
+requests
+anthropic
+psycopg2-binary
+schedule
+gunicorn
