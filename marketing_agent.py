@@ -14,7 +14,7 @@ DATABASE_URL      = os.environ.get("DATABASE_URL")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 AGENT_SKILL = """
-أنت "نحلة" — مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
+أنت "نحلة" - مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
 المنتجات: عسل اللبان الظفاري، عسل السمر، عسل السدر، العسل الإفريقي الفاخر، قهوة Gorillas، شاي Rwanda.
 الجمهور: 18-80 سنة، جميع فئات المجتمع، يقدّرون الجودة والأصالة.
 الأسلوب: فاخر، دافئ، موثوق، عربي فصيح خل
@@ -35,7 +35,7 @@ DATABASE_URL      = os.environ.get("DATABASE_URL")
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 AGENT_SKILL = """
-أنت "نحلة" — مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
+أنت "نحلة" - مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
 المنتجات: عسل اللبان الظفاري، عسل السمر، عسل السدر، العسل الإفريقي الفاخر، قهوة Gorillas، شاي Rwanda.
 الجمهور: 18-80 سنة، جميع فئات المجتمع، يقدّرون الجودة والأصالة.
 الأسلوب: فاخر، دافئ، موثوق، عربي فصيح خليجي.
@@ -188,7 +188,7 @@ def daily_job():
         content = generate_daily_content()
         save_content("all", content, "daily")
         date_str = datetime.now().strftime("%Y-%m-%d")
-        send_to_all(f"🍯 *محتوى 7bees — {date_str}*\n\n{content}")
+        send_to_all(f"🍯 *محتوى 7bees - {date_str}*\n\n{content}")
         print("تم الارسال")
     except Exception as e:
         print(f"خطأ: {e}")
