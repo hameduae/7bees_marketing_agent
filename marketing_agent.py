@@ -5,42 +5,20 @@ import psycopg2
 from datetime import datetime
 import schedule
 import time
+from flask import Flask, jsonify
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-TELEGRAM_TOKEN    = os.environ.get("TELEGRAM_TOKEN")
-CHAT_IDS          = os.environ.get("CHAT_IDS", "").split(",")
-DATABASE_URL      = os.environ.get("DATABASE_URL")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_IDS = os.environ.get("CHAT_IDS", "").split(",")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-AGENT_SKILL = """
-أنت "نحلة" - مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
-المنتجات: عسل اللبان الظفاري، عسل السمر، عسل السدر، العسل الإفريقي الفاخر، قهوة Gorillas، شاي Rwanda.
-الجمهور: 18-80 سنة، جميع فئات المجتمع، يقدّرون الجودة والأصالة.
-الأسلوب: فاخر، دافئ، موثوق، عربي فصيح خل
-cat > ~/Desktop/7bees_marketing_agent/marketing_agent.py << 'ENDOFFILE'
-import os
-import anthropic
-import requests
-import psycopg2
-from datetime import datetime
-import schedule
-import time
-
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-TELEGRAM_TOKEN    = os.environ.get("TELEGRAM_TOKEN")
-CHAT_IDS          = os.environ.get("CHAT_IDS", "").split(",")
-DATABASE_URL      = os.environ.get("DATABASE_URL")
-
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-AGENT_SKILL = """
-أنت "نحلة" - مدير التسويق الرقمي لعلامة 7bees الفاخرة في الإمارات.
-المنتجات: عسل اللبان الظفاري، عسل السمر، عسل السدر، العسل الإفريقي الفاخر، قهوة Gorillas، شاي Rwanda.
-الجمهور: 18-80 سنة، جميع فئات المجتمع، يقدّرون الجودة والأصالة.
-الأسلوب: فاخر، دافئ، موثوق، عربي فصيح خليجي.
-القواعد: لا تكرار، كل بوست يحمل قيمة، راعِ المناسبات الإماراتية.
-"""
+BRAND = "7bees"
+PRODUCTS = "Dhofar frankincense honey, Samr honey, Sidr honey, African luxury honey, Gorillas Coffee, Rwanda Mountain Tea"
+AUDIENCE = "All segments age 18-80, UAE residents, value quality and authenticity"
+STYLE = "Luxury, warm, trustworthy, Gulf Arabic"
+RULES = "No repetition, every post has value, respect UAE occasions"
 
 def get_db():
     return psycopg2.connect(DATABASE_URL)
@@ -87,53 +65,57 @@ def get_recent_topics():
 
 def generate_daily_content():
     recent = get_recent_topics()
-    recent_text = "\n".join(recent) if recent else "لا يوجد محتوى سابق"
-    prompt = f"""
-{AGENT_SKILL}
+    recent_text = "\n".join(recent) if recent else "No previous content"
 
-المواضيع الأخيرة (تجنّبها):
+    prompt = f"""You are a luxury marketing manager for {BRAND} in UAE.
+Products: {PRODUCTS}
+Audience: {AUDIENCE}
+Style: {STYLE}
+Rules: {RULES}
+
+Recent topics to avoid:
 {recent_text}
 
-أنشئ المحتوى التالي:
+Generate daily social media content in Arabic (Gulf dialect, warm and luxurious tone):
 
 ---INSTAGRAM_1---
-الكابشن (3-4 أسطر عن فائدة صحية):
-الهاشتاقات (15 هاشتاق):
-أفضل وقت النشر:
-فكرة الصورة:
+Caption (3-4 lines about health benefit):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
 ---END---
 
 ---INSTAGRAM_2---
-الكابشن (3-4 أسطر عن قصة مصدر العسل):
-الهاشتاقات (15 هاشتاق):
-أفضل وقت النشر:
-فكرة الصورة:
+Caption (3-4 lines about honey origin story):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
 ---END---
 
 ---INSTAGRAM_3---
-الكابشن (3-4 أسطر وصفة أو طريقة استخدام):
-الهاشتاقات (15 هاشتاق):
-أفضل وقت النشر:
-فكرة الصورة:
+Caption (3-4 lines recipe or usage tip):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
 ---END---
 
 ---TIKTOK_1---
-العنوان:
-السكريبت (30-60 ثانية):
-الموسيقى المقترحة:
-الهاشتاقات:
+Title:
+Script (30-60 seconds):
+Suggested music:
+Hashtags:
 ---END---
 
 ---TIKTOK_2---
-العنوان:
-السكريبت:
-الموسيقى المقترحة:
-الهاشتاقات:
+Title:
+Script:
+Suggested music:
+Hashtags:
 ---END---
 
 ---SNAPCHAT---
-النص (سطر أو سطران):
-الفلتر المقترح:
+Text (1-2 lines):
+Suggested filter:
 ---END---
 """
     response = client.messages.create(
@@ -144,17 +126,151 @@ def generate_daily_content():
     return response.content[0].text
 
 def generate_weekly_analysis():
-    prompt = f"""
-{AGENT_SKILL}
+    prompt = f"""You are a luxury marketing manager for {BRAND} in UAE.
+Products: {PRODUCTS}
 
-قدّم تقرير أسبوعي يتضمن:
-1. أبرز منافسي العسل في UAE على السوشيال ميديا
-2. أكثر أنواع المحتوى تفاعلاً في هذا المجال
-3. فرص غير مستغلة لـ 7bees
-4. توصية استراتيجية للأسبوع القادم
-5. أفضل 3 أفكار محتوى مستوحاة من السوق
+Write a weekly market analysis report in Arabic including:
+1. Top honey
+cat > marketing_agent.py << 'PYEOF'
+import os
+import anthropic
+import requests
+import psycopg2
+from datetime import datetime
+import schedule
+import time
+from flask import Flask, jsonify
 
-اكتب بأسلوب تقرير تنفيذي مختصر باللغة العربية.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_IDS = os.environ.get("CHAT_IDS", "").split(",")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+BRAND = "7bees"
+PRODUCTS = "Dhofar frankincense honey, Samr honey, Sidr honey, African luxury honey, Gorillas Coffee, Rwanda Mountain Tea"
+AUDIENCE = "All segments age 18-80, UAE residents, value quality and authenticity"
+STYLE = "Luxury, warm, trustworthy, Gulf Arabic"
+RULES = "No repetition, every post has value, respect UAE occasions"
+
+def get_db():
+    return psycopg2.connect(DATABASE_URL)
+
+def init_db():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS marketing_content (
+            id SERIAL PRIMARY KEY,
+            platform VARCHAR(50),
+            content TEXT,
+            content_type VARCHAR(50),
+            created_at TIMESTAMP DEFAULT NOW(),
+            published BOOLEAN DEFAULT FALSE
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def save_content(platform, content, content_type):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO marketing_content (platform, content, content_type) VALUES (%s, %s, %s)",
+        (platform, content, content_type)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_recent_topics():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT content FROM marketing_content ORDER BY created_at DESC LIMIT 10")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [r[0][:100] for r in rows]
+    except:
+        return []
+
+def generate_daily_content():
+    recent = get_recent_topics()
+    recent_text = "\n".join(recent) if recent else "No previous content"
+
+    prompt = f"""You are a luxury marketing manager for {BRAND} in UAE.
+Products: {PRODUCTS}
+Audience: {AUDIENCE}
+Style: {STYLE}
+Rules: {RULES}
+
+Recent topics to avoid:
+{recent_text}
+
+Generate daily social media content in Arabic (Gulf dialect, warm and luxurious tone):
+
+---INSTAGRAM_1---
+Caption (3-4 lines about health benefit):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
+---END---
+
+---INSTAGRAM_2---
+Caption (3-4 lines about honey origin story):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
+---END---
+
+---INSTAGRAM_3---
+Caption (3-4 lines recipe or usage tip):
+Hashtags (15 tags):
+Best posting time:
+Photo idea:
+---END---
+
+---TIKTOK_1---
+Title:
+Script (30-60 seconds):
+Suggested music:
+Hashtags:
+---END---
+
+---TIKTOK_2---
+Title:
+Script:
+Suggested music:
+Hashtags:
+---END---
+
+---SNAPCHAT---
+Text (1-2 lines):
+Suggested filter:
+---END---
+"""
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+
+def generate_weekly_analysis():
+    prompt = f"""You are a luxury marketing manager for {BRAND} in UAE.
+Products: {PRODUCTS}
+
+Write a weekly market analysis report in Arabic including:
+1. Top honey and natural products competitors in UAE social media
+2. Most engaging content types in this category
+3. Untapped opportunities for 7bees
+4. Strategic recommendation for next week
+5. Top 3 content ideas inspired by market trends
+
+Write as a concise executive report in Arabic.
 """
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -169,7 +285,7 @@ def send_telegram(message, chat_id):
     try:
         requests.post(url, data=data, timeout=30)
     except Exception as e:
-        print(f"خطأ تيليغرام: {e}")
+        print(f"Telegram error: {e}")
 
 def send_to_all(message):
     for chat_id in CHAT_IDS:
@@ -183,42 +299,41 @@ def send_to_all(message):
                 send_telegram(message, chat_id)
 
 def daily_job():
-    print(f"[{datetime.now()}] توليد المحتوى اليومي...")
+    print(f"[{datetime.now()}] Generating daily content...")
     try:
         content = generate_daily_content()
         save_content("all", content, "daily")
         date_str = datetime.now().strftime("%Y-%m-%d")
-        send_to_all(f"🍯 *محتوى 7bees - {date_str}*\n\n{content}")
-        print("تم الارسال")
+        send_to_all(f"*7bees Daily Content - {date_str}*\n\n{content}")
+        print("Done!")
     except Exception as e:
-        print(f"خطأ: {e}")
-        send_to_all(f"خطأ في توليد المحتوى: {e}")
+        print(f"Error: {e}")
+        send_to_all(f"Error generating content: {e}")
 
 def weekly_job():
-    print(f"[{datetime.now()}] التقرير الأسبوعي...")
+    print(f"[{datetime.now()}] Generating weekly report...")
     try:
         analysis = generate_weekly_analysis()
-        send_to_all(f"📊 *تقرير 7bees الأسبوعي*\n\n{analysis}")
-        print("تم الارسال")
+        send_to_all(f"*7bees Weekly Report*\n\n{analysis}")
+        print("Done!")
     except Exception as e:
-        print(f"خطأ: {e}")
+        print(f"Error: {e}")
 
-from flask import Flask, jsonify
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return jsonify({"status": "7bees Marketing Agent يعمل"})
+    return jsonify({"status": "7bees Marketing Agent is running"})
 
 @app.route("/generate-now")
 def generate_now():
     daily_job()
-    return jsonify({"status": "تم توليد المحتوى"})
+    return jsonify({"status": "Content generated and sent"})
 
 @app.route("/weekly-now")
 def weekly_now():
     weekly_job()
-    return jsonify({"status": "تم إرسال التقرير"})
+    return jsonify({"status": "Weekly report sent"})
 
 def run_scheduler():
     schedule.every().day.at("04:00").do(daily_job)
@@ -229,7 +344,7 @@ def run_scheduler():
 
 if __name__ == "__main__":
     init_db()
-    print("7bees Marketing Agent يعمل")
+    print("7bees Marketing Agent starting...")
     import threading
     t = threading.Thread(target=run_scheduler, daemon=True)
     t.start()
