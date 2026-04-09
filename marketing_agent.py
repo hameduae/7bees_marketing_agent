@@ -17,6 +17,20 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 def get_db():
     return psycopg2.connect(DATABASE_URL)
 
+def ensure_db():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS marketing_content (id SERIAL PRIMARY KEY, platform VARCHAR(50), content TEXT, content_type VARCHAR(50), created_at TIMESTAMP DEFAULT NOW(), published BOOLEAN DEFAULT FALSE)""")
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("DB init error: " + str(e))
+
+def get_db_orig():
+    return psycopg2.connect(DATABASE_URL)
+
 def init_db():
     conn = get_db()
     cur = conn.cursor()
@@ -34,15 +48,16 @@ def init_db():
     conn.close()
 
 def save_content(platform, content, content_type):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO marketing_content (platform, content, content_type) VALUES (%s, %s, %s)",
-        (platform, content, content_type)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS marketing_content (id SERIAL PRIMARY KEY, platform VARCHAR(50), content TEXT, content_type VARCHAR(50), created_at TIMESTAMP DEFAULT NOW(), published BOOLEAN DEFAULT FALSE)""")
+        cur.execute("INSERT INTO marketing_content (platform, content, content_type) VALUES (%s, %s, %s)", (platform, content, content_type))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("DB error: " + str(e))
 
 def get_recent_topics():
     try:
